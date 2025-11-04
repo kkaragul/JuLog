@@ -13,6 +13,12 @@ include("../src/MSHH.jl")
 using .MSHH
 using .MSHH.TSPDomain
 using .MSHH.CVRPDomain
+using .MSHH.CVRPTWDomain
+using .MSHH.EVRPDomain
+using .MSHH.CO2VRPDomain
+using .MSHH.BinPackingDomain
+using .MSHH.JobShopDomain
+using .MSHH.FlowShopDomain
 using .MSHH.Parsers
 
 # Store active solving jobs
@@ -260,7 +266,7 @@ route("/api/health") do
     return json(Dict(
         "status" => "healthy",
         "version" => "1.0.0",
-        "domains" => ["TSP", "CVRP"]
+        "domains" => ["TSP", "CVRP", "CVRPTW", "EVRP", "CO2VRP", "BinPacking", "JobShop", "FlowShop"]
     ))
 end
 
@@ -547,6 +553,119 @@ route("/api/solve/binpacking", method = POST) do
                         "computation_time" => result.computation_time,
                         "bins" => bins_data,
                         "n_bins" => length(bins_data)
+                    )
+                )
+            catch e
+                ACTIVE_JOBS[job_id] = Dict("status" => "error", "error" => string(e))
+            end
+        end
+
+        ACTIVE_JOBS[job_id] = Dict("status" => "running")
+        return json(Dict("job_id" => job_id, "status" => "running"))
+    catch e
+        return json(Dict("error" => string(e), "status" => "error"), status = 500)
+    end
+end
+
+"""
+    POST /api/solve/jobshop
+
+Solve a Job Shop Scheduling instance.
+"""
+route("/api/solve/jobshop", method = POST) do
+    try
+        payload = jsonpayload()
+        instance_file = get(payload, "instance_file", "")
+
+        if isempty(instance_file) || !isfile(instance_file)
+            return json(Dict("error" => "Invalid instance file", "status" => "error"), status = 400)
+        end
+
+        time_limit = get(payload, "time_limit", 60)
+        params_dict = get(payload, "parameters", Dict())
+        params = MSHHParameters(
+            τ = get(params_dict, "tau", 0.015),
+            d = get(params_dict, "d", 9.0),
+            s1 = get(params_dict, "s1", 20.0),
+            s2 = get(params_dict, "s2", 5),
+            PS2HH = get(params_dict, "PS2HH", 0.3),
+            time_limit = time_limit
+        )
+
+        job_id = string(uuid4())
+
+        @async begin
+            try
+                instance = parse_jobshop(instance_file)
+                domain = JobShop(instance)
+                solver = MSHHSolver(domain, params)
+                result = solve!(solver)
+
+                ACTIVE_JOBS[job_id] = Dict(
+                    "status" => "completed",
+                    "result" => Dict(
+                        "best_objective" => result.best_objective,
+                        "computation_time" => result.computation_time,
+                        "makespan" => result.best_solution.makespan,
+                        "n_jobs" => instance.n_jobs,
+                        "n_machines" => instance.n_machines
+                    )
+                )
+            catch e
+                ACTIVE_JOBS[job_id] = Dict("status" => "error", "error" => string(e))
+            end
+        end
+
+        ACTIVE_JOBS[job_id] = Dict("status" => "running")
+        return json(Dict("job_id" => job_id, "status" => "running"))
+    catch e
+        return json(Dict("error" => string(e), "status" => "error"), status = 500)
+    end
+end
+
+"""
+    POST /api/solve/flowshop
+
+Solve a Flow Shop Scheduling instance.
+"""
+route("/api/solve/flowshop", method = POST) do
+    try
+        payload = jsonpayload()
+        instance_file = get(payload, "instance_file", "")
+
+        if isempty(instance_file) || !isfile(instance_file)
+            return json(Dict("error" => "Invalid instance file", "status" => "error"), status = 400)
+        end
+
+        time_limit = get(payload, "time_limit", 60)
+        params_dict = get(payload, "parameters", Dict())
+        params = MSHHParameters(
+            τ = get(params_dict, "tau", 0.015),
+            d = get(params_dict, "d", 9.0),
+            s1 = get(params_dict, "s1", 20.0),
+            s2 = get(params_dict, "s2", 5),
+            PS2HH = get(params_dict, "PS2HH", 0.3),
+            time_limit = time_limit
+        )
+
+        job_id = string(uuid4())
+
+        @async begin
+            try
+                instance = parse_flowshop(instance_file)
+                domain = FlowShop(instance)
+                solver = MSHHSolver(domain, params)
+                result = solve!(solver)
+
+                ACTIVE_JOBS[job_id] = Dict(
+                    "status" => "completed",
+                    "result" => Dict(
+                        "best_objective" => result.best_objective,
+                        "computation_time" => result.computation_time,
+                        "makespan" => result.best_solution.makespan,
+                        "job_sequence" => result.best_solution.job_sequence,
+                        "n_jobs" => instance.n_jobs,
+                        "n_machines" => instance.n_machines
                     )
                 )
             catch e

@@ -31,6 +31,8 @@ include("domains/CVRPTW.jl")
 include("domains/EVRP.jl")
 include("domains/CO2VRP.jl")
 include("domains/BinPacking.jl")
+include("domains/JobShop.jl")
+include("domains/FlowShop.jl")
 
 # Low-level heuristics (included in domain files)
 

@@ -11,10 +11,14 @@ using ..CVRPTWDomain
 using ..EVRPDomain
 using ..CO2VRPDomain
 using ..BinPackingDomain
+using ..JobShopDomain
+using ..FlowShopDomain
 
 export parse_tsp, parse_vrp, save_solution_tsp, save_solution_vrp
 export parse_solomon, parse_evrp, parse_co2vrp, parse_bpp
+export parse_jobshop, parse_flowshop
 export create_sample_solomon, create_sample_evrp, create_sample_bpp
+export create_sample_jobshop, create_sample_flowshop
 
 """
     parse_tsp(filename::String)::TSPInstance
@@ -683,6 +687,182 @@ function create_sample_bpp(n::Int, capacity::Int, filename::String)
         for i in 1:n
             size = rand(1:capacity÷2)
             println(io, size)
+        end
+    end
+end
+
+"""
+    parse_jobshop(filename::String)::JobShopInstance
+
+Parse Job Shop Scheduling format.
+
+# Example format:
+```
+NAME: ft06
+JOBS: 6
+MACHINES: 6
+OPERATIONS:
+# Job Machine ProcessingTime
+1 3 1
+1 1 3
+1 2 6
+...
+```
+"""
+function parse_jobshop(filename::String)::JobShopInstance
+    lines = readlines(filename)
+
+    name = ""
+    n_jobs = 0
+    n_machines = 0
+    jobs = JobShopJob[]
+
+    section = ""
+    current_job_id = 0
+    operations = Operation[]
+
+    for line in lines
+        line = strip(line)
+        if isempty(line) || startswith(line, "#")
+            continue
+        end
+
+        if startswith(line, "NAME")
+            name = strip(split(line, ':')[2])
+        elseif startswith(line, "JOBS")
+            n_jobs = parse(Int, strip(split(line, ':')[2]))
+        elseif startswith(line, "MACHINES")
+            n_machines = parse(Int, strip(split(line, ':')[2]))
+        elseif startswith(line, "OPERATIONS")
+            section = "OPERATIONS"
+        elseif section == "OPERATIONS"
+            parts = split(line)
+            if length(parts) >= 3
+                job_id = parse(Int, parts[1])
+                machine_id = parse(Int, parts[2])
+                proc_time = parse(Int, parts[3])
+
+                # If new job, save previous job
+                if job_id != current_job_id && !isempty(operations)
+                    push!(jobs, JobShopJob(current_job_id, operations))
+                    operations = Operation[]
+                end
+
+                current_job_id = job_id
+                op_id = length(operations) + 1
+                push!(operations, Operation(job_id, op_id, machine_id, proc_time))
+            end
+        end
+    end
+
+    # Add last job
+    if !isempty(operations)
+        push!(jobs, JobShopJob(current_job_id, operations))
+    end
+
+    return JobShopInstance(name, n_jobs, n_machines, jobs)
+end
+
+"""
+    parse_flowshop(filename::String)::FlowShopInstance
+
+Parse Flow Shop Scheduling format (Taillard format).
+
+# Example format:
+```
+NAME: tai20_5
+JOBS: 20
+MACHINES: 5
+PROCESSING_TIMES:
+# Each row is a job, each column is a machine
+54 79 16 66 58
+83 3 89 58 56
+...
+```
+"""
+function parse_flowshop(filename::String)::FlowShopInstance
+    lines = readlines(filename)
+
+    name = ""
+    n_jobs = 0
+    n_machines = 0
+    processing_times = Matrix{Int}(undef, 0, 0)
+
+    section = ""
+    row_idx = 1
+
+    for line in lines
+        line = strip(line)
+        if isempty(line) || startswith(line, "#")
+            continue
+        end
+
+        if startswith(line, "NAME")
+            name = strip(split(line, ':')[2])
+        elseif startswith(line, "JOBS")
+            n_jobs = parse(Int, strip(split(line, ':')[2]))
+        elseif startswith(line, "MACHINES")
+            n_machines = parse(Int, strip(split(line, ':')[2]))
+            processing_times = zeros(Int, n_jobs, n_machines)
+        elseif startswith(line, "PROCESSING_TIMES")
+            section = "TIMES"
+        elseif section == "TIMES"
+            parts = split(line)
+            if !isempty(parts) && all(c -> isdigit(c) || isspace(c), line)
+                for (col_idx, part) in enumerate(parts)
+                    if col_idx <= n_machines && row_idx <= n_jobs
+                        processing_times[row_idx, col_idx] = parse(Int, part)
+                    end
+                end
+                row_idx += 1
+            end
+        end
+    end
+
+    return FlowShopInstance(name, n_jobs, n_machines, processing_times)
+end
+
+"""
+    create_sample_jobshop(n_jobs::Int, n_machines::Int, filename::String)
+
+Create sample Job Shop instance.
+"""
+function create_sample_jobshop(n_jobs::Int, n_machines::Int, filename::String)
+    open(filename, "w") do io
+        println(io, "NAME: random_js_$(n_jobs)x$(n_machines)")
+        println(io, "JOBS: $n_jobs")
+        println(io, "MACHINES: $n_machines")
+        println(io, "OPERATIONS:")
+        println(io, "# Job Machine ProcessingTime")
+
+        for job in 1:n_jobs
+            # Each job has operations on all machines in random order
+            machine_order = randperm(n_machines)
+
+            for machine in machine_order
+                proc_time = rand(1:100)
+                println(io, "$job $machine $proc_time")
+            end
+        end
+    end
+end
+
+"""
+    create_sample_flowshop(n_jobs::Int, n_machines::Int, filename::String)
+
+Create sample Flow Shop instance (Taillard format).
+"""
+function create_sample_flowshop(n_jobs::Int, n_machines::Int, filename::String)
+    open(filename, "w") do io
+        println(io, "NAME: random_fs_$(n_jobs)x$(n_machines)")
+        println(io, "JOBS: $n_jobs")
+        println(io, "MACHINES: $n_machines")
+        println(io, "PROCESSING_TIMES:")
+        println(io, "# Each row = job, each column = machine")
+
+        for job in 1:n_jobs
+            times = [rand(1:100) for _ in 1:n_machines]
+            println(io, join(times, " "))
         end
     end
 end

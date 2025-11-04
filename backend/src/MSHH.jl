@@ -27,10 +27,12 @@ include("domains/AbstractDomain.jl")
 # Specific domains
 include("domains/TSP.jl")
 include("domains/CVRP.jl")
+include("domains/CVRPTW.jl")
+include("domains/EVRP.jl")
+include("domains/CO2VRP.jl")
+include("domains/BinPacking.jl")
 
-# Low-level heuristics
-include("llh/routing/TSPHeuristics.jl")
-include("llh/routing/CVRPHeuristics.jl")
+# Low-level heuristics (included in domain files)
 
 # Utilities
 include("utils/parsers.jl")

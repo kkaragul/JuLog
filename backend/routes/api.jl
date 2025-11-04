@@ -315,4 +315,250 @@ route("/api/upload/instance", method = POST) do
     end
 end
 
+"""
+    POST /api/solve/cvrptw
+
+Solve a CVRPTW (Time Windows) instance.
+"""
+route("/api/solve/cvrptw", method = POST) do
+    try
+        payload = jsonpayload()
+        instance_file = get(payload, "instance_file", "")
+
+        if isempty(instance_file) || !isfile(instance_file)
+            return json(Dict("error" => "Invalid instance file", "status" => "error"), status = 400)
+        end
+
+        time_limit = get(payload, "time_limit", 60)
+        params_dict = get(payload, "parameters", Dict())
+        params = MSHHParameters(
+            τ = get(params_dict, "tau", 0.015),
+            d = get(params_dict, "d", 9.0),
+            s1 = get(params_dict, "s1", 20.0),
+            s2 = get(params_dict, "s2", 5),
+            PS2HH = get(params_dict, "PS2HH", 0.3),
+            time_limit = time_limit
+        )
+
+        job_id = string(uuid4())
+
+        @async begin
+            try
+                instance = parse_solomon(instance_file)
+                domain = CVRPTW(instance)
+                solver = MSHHSolver(domain, params)
+                result = solve!(solver)
+
+                routes_data = []
+                for route in result.best_solution.routes
+                    push!(routes_data, Dict("customers" => route.customers, "load" => route.load))
+                end
+
+                ACTIVE_JOBS[job_id] = Dict(
+                    "status" => "completed",
+                    "result" => Dict(
+                        "best_objective" => result.best_objective,
+                        "computation_time" => result.computation_time,
+                        "routes" => routes_data
+                    )
+                )
+            catch e
+                ACTIVE_JOBS[job_id] = Dict("status" => "error", "error" => string(e))
+            end
+        end
+
+        ACTIVE_JOBS[job_id] = Dict("status" => "running")
+        return json(Dict("job_id" => job_id, "status" => "running"))
+    catch e
+        return json(Dict("error" => string(e), "status" => "error"), status = 500)
+    end
+end
+
+"""
+    POST /api/solve/evrp
+
+Solve an EVRP (Electric Vehicle) instance.
+"""
+route("/api/solve/evrp", method = POST) do
+    try
+        payload = jsonpayload()
+        instance_file = get(payload, "instance_file", "")
+
+        if isempty(instance_file) || !isfile(instance_file)
+            return json(Dict("error" => "Invalid instance file", "status" => "error"), status = 400)
+        end
+
+        time_limit = get(payload, "time_limit", 60)
+        params_dict = get(payload, "parameters", Dict())
+        params = MSHHParameters(
+            τ = get(params_dict, "tau", 0.015),
+            d = get(params_dict, "d", 9.0),
+            s1 = get(params_dict, "s1", 20.0),
+            s2 = get(params_dict, "s2", 5),
+            PS2HH = get(params_dict, "PS2HH", 0.3),
+            time_limit = time_limit
+        )
+
+        job_id = string(uuid4())
+
+        @async begin
+            try
+                instance = parse_evrp(instance_file)
+                domain = EVRP(instance)
+                solver = MSHHSolver(domain, params)
+                result = solve!(solver)
+
+                routes_data = []
+                for route in result.best_solution.routes
+                    push!(routes_data, Dict("sequence" => route.sequence, "customer_visits" => route.customer_visits))
+                end
+
+                ACTIVE_JOBS[job_id] = Dict(
+                    "status" => "completed",
+                    "result" => Dict(
+                        "best_objective" => result.best_objective,
+                        "computation_time" => result.computation_time,
+                        "routes" => routes_data
+                    )
+                )
+            catch e
+                ACTIVE_JOBS[job_id] = Dict("status" => "error", "error" => string(e))
+            end
+        end
+
+        ACTIVE_JOBS[job_id] = Dict("status" => "running")
+        return json(Dict("job_id" => job_id, "status" => "running"))
+    catch e
+        return json(Dict("error" => string(e), "status" => "error"), status = 500)
+    end
+end
+
+"""
+    POST /api/solve/co2vrp
+
+Solve a CO2VRP (Green Routing) instance.
+"""
+route("/api/solve/co2vrp", method = POST) do
+    try
+        payload = jsonpayload()
+        instance_file = get(payload, "instance_file", "")
+
+        if isempty(instance_file) || !isfile(instance_file)
+            return json(Dict("error" => "Invalid instance file", "status" => "error"), status = 400)
+        end
+
+        time_limit = get(payload, "time_limit", 60)
+        params_dict = get(payload, "parameters", Dict())
+        params = MSHHParameters(
+            τ = get(params_dict, "tau", 0.015),
+            d = get(params_dict, "d", 9.0),
+            s1 = get(params_dict, "s1", 20.0),
+            s2 = get(params_dict, "s2", 5),
+            PS2HH = get(params_dict, "PS2HH", 0.3),
+            time_limit = time_limit
+        )
+
+        job_id = string(uuid4())
+
+        @async begin
+            try
+                instance = parse_co2vrp(instance_file)
+                domain = CO2VRP(instance)
+                solver = MSHHSolver(domain, params)
+                result = solve!(solver)
+
+                routes_data = []
+                for route in result.best_solution.routes
+                    push!(routes_data, Dict(
+                        "customers" => route.customers,
+                        "emissions" => route.total_emissions
+                    ))
+                end
+
+                ACTIVE_JOBS[job_id] = Dict(
+                    "status" => "completed",
+                    "result" => Dict(
+                        "best_objective" => result.best_objective,
+                        "computation_time" => result.computation_time,
+                        "routes" => routes_data,
+                        "total_emissions" => result.best_solution.total_emissions
+                    )
+                )
+            catch e
+                ACTIVE_JOBS[job_id] = Dict("status" => "error", "error" => string(e))
+            end
+        end
+
+        ACTIVE_JOBS[job_id] = Dict("status" => "running")
+        return json(Dict("job_id" => job_id, "status" => "running"))
+    catch e
+        return json(Dict("error" => string(e), "status" => "error"), status = 500)
+    end
+end
+
+"""
+    POST /api/solve/binpacking
+
+Solve a Bin Packing instance.
+"""
+route("/api/solve/binpacking", method = POST) do
+    try
+        payload = jsonpayload()
+        instance_file = get(payload, "instance_file", "")
+
+        if isempty(instance_file) || !isfile(instance_file)
+            return json(Dict("error" => "Invalid instance file", "status" => "error"), status = 400)
+        end
+
+        time_limit = get(payload, "time_limit", 60)
+        params_dict = get(payload, "parameters", Dict())
+        params = MSHHParameters(
+            τ = get(params_dict, "tau", 0.015),
+            d = get(params_dict, "d", 9.0),
+            s1 = get(params_dict, "s1", 20.0),
+            s2 = get(params_dict, "s2", 5),
+            PS2HH = get(params_dict, "PS2HH", 0.3),
+            time_limit = time_limit
+        )
+
+        job_id = string(uuid4())
+
+        @async begin
+            try
+                instance = parse_bpp(instance_file)
+                domain = BinPacking(instance)
+                solver = MSHHSolver(domain, params)
+                result = solve!(solver)
+
+                bins_data = []
+                for bin in result.best_solution.bins
+                    if !isempty(bin.items)
+                        push!(bins_data, Dict(
+                            "items" => bin.items,
+                            "load" => bin.current_load
+                        ))
+                    end
+                end
+
+                ACTIVE_JOBS[job_id] = Dict(
+                    "status" => "completed",
+                    "result" => Dict(
+                        "best_objective" => result.best_objective,
+                        "computation_time" => result.computation_time,
+                        "bins" => bins_data,
+                        "n_bins" => length(bins_data)
+                    )
+                )
+            catch e
+                ACTIVE_JOBS[job_id] = Dict("status" => "error", "error" => string(e))
+            end
+        end
+
+        ACTIVE_JOBS[job_id] = Dict("status" => "running")
+        return json(Dict("job_id" => job_id, "status" => "running"))
+    catch e
+        return json(Dict("error" => string(e), "status" => "error"), status = 500)
+    end
+end
+
 println("✓ API routes loaded")

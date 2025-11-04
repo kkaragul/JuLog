@@ -680,4 +680,7 @@ route("/api/solve/flowshop", method = POST) do
     end
 end
 
+# Include batch API routes
+include("batch_api.jl")
+
 println("✓ API routes loaded")

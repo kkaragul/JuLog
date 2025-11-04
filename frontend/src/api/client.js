@@ -121,4 +121,72 @@ export async function pollJobStatus(jobId, onProgress, interval = 1000) {
   });
 }
 
+/**
+ * BATCH SOLVING APIs
+ */
+
+/**
+ * Start a batch solving job
+ * @param {object} config - Batch configuration
+ */
+export async function startBatchJob(config) {
+  const response = await api.post('/api/batch/start', config);
+  return response.data;
+}
+
+/**
+ * Get batch job status
+ * @param {string} batchId - Batch ID
+ */
+export async function getBatchStatus(batchId) {
+  const response = await api.get(`/api/batch/status/${batchId}`);
+  return response.data;
+}
+
+/**
+ * List all batch jobs
+ */
+export async function getBatchList() {
+  const response = await api.get('/api/batch/list');
+  return response.data;
+}
+
+/**
+ * Get detailed batch results
+ * @param {string} batchId - Batch ID
+ */
+export async function getBatchResults(batchId) {
+  const response = await api.get(`/api/batch/results/${batchId}`);
+  return response.data;
+}
+
+/**
+ * Download batch results as CSV
+ * @param {string} batchId - Batch ID
+ */
+export async function downloadBatchCSV(batchId) {
+  const response = await api.get(`/api/batch/download/${batchId}`, {
+    responseType: 'blob'
+  });
+
+  // Create download link
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', `batch_results_${batchId}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+/**
+ * Delete a batch job
+ * @param {string} batchId - Batch ID
+ */
+export async function deleteBatchJob(batchId) {
+  const response = await api.delete(`/api/batch/delete/${batchId}`);
+  return response.data;
+}
+
 export default api;

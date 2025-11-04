@@ -1,0 +1,50 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+DEPLOYMENT.md
+docs/
+
+# Node modules (will be installed in container)
+frontend/node_modules
+frontend/dist
+
+# Julia artifacts (will be built in container)
+backend/Manifest.toml
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Test files
+backend/test/
+*.test.jl
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Build artifacts
+*.o
+*.so
+*.dylib
+*.dll
+
+# Instance files (mounted as volume)
+instances/
+results/

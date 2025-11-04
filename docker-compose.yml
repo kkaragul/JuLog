@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  # MSHH Solver Backend + Frontend
+  mshh-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mshh-solver
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount instance directories for easy access
+      - ./instances:/app/instances
+      - ./results:/app/results
+      # Mount logs directory
+      - ./logs:/app/logs
+    environment:
+      - JULIA_PROJECT=/app/backend
+      - GENIE_ENV=prod
+      - PORT=8000
+      - JULIA_NUM_THREADS=auto
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - mshh-network
+
+  # Optional: Nginx reverse proxy for production
+  nginx:
+    image: nginx:alpine
+    container_name: mshh-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - mshh-app
+    restart: unless-stopped
+    networks:
+      - mshh-network
+    profiles:
+      - production
+
+  # Optional: Redis for caching (future enhancement)
+  redis:
+    image: redis:7-alpine
+    container_name: mshh-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - mshh-network
+    profiles:
+      - with-cache
+
+networks:
+  mshh-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

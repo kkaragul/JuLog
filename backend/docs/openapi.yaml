@@ -1,0 +1,467 @@
+openapi: 3.0.3
+info:
+  title: MSHH Solver API
+  description: |
+    Multi-Stage Selection Hyper-Heuristic (MSHH) Framework API
+
+    This API provides endpoints for solving various combinatorial optimization problems
+    using the MSHH algorithm based on Kheiri & Özcan (2016).
+
+    **Supported Problem Domains:**
+    - TSP (Traveling Salesman Problem)
+    - CVRP (Capacitated Vehicle Routing Problem)
+    - CVRPTW (CVRP with Time Windows)
+    - EVRP (Electric Vehicle Routing Problem)
+    - CO2VRP (Green Vehicle Routing Problem)
+    - BinPacking (Bin Packing Problem)
+    - JobShop (Job Shop Scheduling)
+    - FlowShop (Flow Shop Scheduling)
+
+  version: 1.0.0
+  contact:
+    name: MSHH Framework
+    url: https://github.com/kkaragul/JuLog
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.mshh.example.com
+    description: Production server
+
+tags:
+  - name: Solver
+    description: Problem solving endpoints
+  - name: Status
+    description: Job status and progress
+  - name: Instances
+    description: Instance management
+  - name: Health
+    description: System health and info
+
+paths:
+  /api/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Check if the API is running and view supported domains
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  version:
+                    type: string
+                    example: 1.0.0
+                  domains:
+                    type: array
+                    items:
+                      type: string
+                    example: ["TSP", "CVRP", "CVRPTW", "EVRP", "CO2VRP", "BinPacking", "JobShop", "FlowShop"]
+
+  /api/solve/tsp:
+    post:
+      tags:
+        - Solver
+      summary: Solve TSP instance
+      description: Solve a Traveling Salesman Problem instance using MSHH
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/solve/cvrp:
+    post:
+      tags:
+        - Solver
+      summary: Solve CVRP instance
+      description: Solve a Capacitated Vehicle Routing Problem instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /api/solve/cvrptw:
+    post:
+      tags:
+        - Solver
+      summary: Solve CVRPTW instance
+      description: Solve a CVRP with Time Windows instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /api/solve/evrp:
+    post:
+      tags:
+        - Solver
+      summary: Solve EVRP instance
+      description: Solve an Electric Vehicle Routing Problem instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /api/solve/co2vrp:
+    post:
+      tags:
+        - Solver
+      summary: Solve CO2VRP instance
+      description: Solve a Green Vehicle Routing Problem instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /api/solve/binpacking:
+    post:
+      tags:
+        - Solver
+      summary: Solve Bin Packing instance
+      description: Solve a Bin Packing Problem instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /api/solve/jobshop:
+    post:
+      tags:
+        - Solver
+      summary: Solve Job Shop instance
+      description: Solve a Job Shop Scheduling instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /api/solve/flowshop:
+    post:
+      tags:
+        - Solver
+      summary: Solve Flow Shop instance
+      description: Solve a Flow Shop Scheduling instance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolveRequest'
+      responses:
+        '200':
+          description: Job started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+
+  /api/status/{job_id}:
+    get:
+      tags:
+        - Status
+      summary: Get job status
+      description: Retrieve the status and result of a solving job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: The job ID returned when starting the solve
+      responses:
+        '200':
+          description: Job status retrieved
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/JobRunning'
+                  - $ref: '#/components/schemas/JobCompleted'
+                  - $ref: '#/components/schemas/JobError'
+        '404':
+          description: Job not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/progress/{job_id}:
+    get:
+      tags:
+        - Status
+      summary: Get job progress
+      description: Get real-time progress updates for a running job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Progress data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressData'
+
+  /api/instances/list:
+    get:
+      tags:
+        - Instances
+      summary: List available instances
+      description: List all available problem instances by domain
+      responses:
+        '200':
+          description: Instance list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tsp:
+                    type: array
+                    items:
+                      type: string
+                  cvrp:
+                    type: array
+                    items:
+                      type: string
+
+  /api/upload/instance:
+    post:
+      tags:
+        - Instances
+      summary: Upload instance file
+      description: Upload a new problem instance file
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                domain:
+                  type: string
+                  enum: [tsp, cvrp, cvrptw, evrp, co2vrp, binpacking, jobshop, flowshop]
+      responses:
+        '200':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  filename:
+                    type: string
+                  path:
+                    type: string
+
+components:
+  schemas:
+    SolveRequest:
+      type: object
+      required:
+        - instance_file
+      properties:
+        instance_file:
+          type: string
+          description: Path to the instance file
+          example: "/app/instances/tsp/eil51.tsp"
+        time_limit:
+          type: number
+          description: Time limit in seconds
+          default: 60
+          example: 300
+        parameters:
+          type: object
+          properties:
+            tau:
+              type: number
+              description: Time per heuristic application (seconds)
+              default: 0.015
+            d:
+              type: number
+              description: Duration threshold for epsilon update (seconds)
+              default: 9.0
+            s1:
+              type: number
+              description: Stage 1 termination time (seconds)
+              default: 20.0
+            s2:
+              type: integer
+              description: Stage 2 number of steps
+              default: 5
+            PS2HH:
+              type: number
+              description: Probability to apply S2HH
+              default: 0.3
+
+    JobResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        status:
+          type: string
+          enum: [running]
+          example: running
+
+    JobRunning:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [running]
+          example: running
+
+    JobCompleted:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [completed]
+        result:
+          type: object
+          properties:
+            best_objective:
+              type: number
+              example: 1250.5
+            computation_time:
+              type: number
+              example: 45.2
+            stages_executed:
+              type: integer
+              example: 127
+
+    JobError:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [error]
+        error:
+          type: string
+          example: "Failed to parse instance file"
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid instance file"
+        status:
+          type: string
+          enum: [error]
+
+    ProgressData:
+      type: object
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        domain:
+          type: string
+        status:
+          type: string
+        elapsed_time:
+          type: number
+        current_objective:
+          type: number
+        best_objective:
+          type: number
+        stages_executed:
+          type: integer
+        improvements:
+          type: integer
+        timestamp:
+          type: number

@@ -1,0 +1,40 @@
+# Julia
+Manifest.toml
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+deps/deps.jl
+
+# Node / NPM
+node_modules/
+dist/
+.vite/
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Instance files (optionally track later)
+instances/**/*.tsp
+instances/**/*.vrp
+instances/**/*.tour
+instances/**/*.sol
+
+# Temporary test files
+test_*.tsp
+test_*.vrp
+test_*.tour
+test_*.sol
+
+# Environment
+.env
+.env.local
